@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  #  Сервис базы данных POSTGRES
+  postgres:
+    image: postgres
+    container_name: dss-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5434:5432" # Пробрасываем порт для локального подключения
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dss-network
+
+  minio:
+    image: minio/minio
+    container_name: dss-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000" # API порт
+      - "9001:9001" # Web UI
+    volumes:
+      - minio_data:/data
+    networks:
+      - dss-network
+
+  app:
+    container_name: dss-app
+    # Собираем образ из Dockerfile в текущей директории
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - "8080:8080"
+    depends_on:
+      - postgres
+      - minio
+    # Подключаем переменные окружения из файла .env
+    env_file:
+      - .env
+    networks:
+        - dss-network
+
+# Определяем тома для хранения данных
+volumes:
+  postgres_data:
+  minio_data:
+
+# Определяем общую сеть для взаимодействия контейнеров
+networks:
+  dss-network:
+    driver: bridge
+
+
+
+
+
+
+
+

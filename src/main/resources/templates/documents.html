@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои Документы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Сервис Документов</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="navbar-text me-3">
+                        Пользователь: <strong th:text="${username}"></strong>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="btn btn-outline-light">Выйти</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Мои документы</h1>
+        <!-- Ссылка видна только админу -->
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/web/admin/dashboard}" class="btn btn-outline-danger">
+            <i class="bi bi-shield-lock-fill"></i> Панель администратора
+        </a>
+    </div>
+
+    <!-- Сообщения об успехе/ошибке -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Форма загрузки -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Загрузить новый документ</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" th:action="@{/web/documents/upload}" enctype="multipart/form-data">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="file" class="form-label">Файл</label>
+                        <input class="form-control" type="file" name="file" id="file" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="category" class="form-label">Категория</label>
+                        <input class="form-control" type="text" name="category" id="category" placeholder="Например, 'Счета'">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Загрузить</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form th:action="@{/web/documents}" method="get" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="query" class="form-control" placeholder="Поиск по имени файла..." th:value="${query}">
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="category" class="form-control" placeholder="Фильтр по категории..." th:value="${category}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Найти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Список документов -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Список документов</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>Имя файла</th>
+                    <th>Тип</th>
+                    <th>Размер</th>
+                    <th>Категория</th>
+                    <th>Дата загрузки</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${documentPage.isEmpty()}">
+                    <td colspan="6" class="text-center">Документы не найдены.</td>
+                </tr>
+                <tr th:each="doc : ${documentPage.content}">
+                    <td th:text="${doc.fileName}"></td>
+                    <td th:text="${doc.fileType}"></td>
+                    <td th:text="${#numbers.formatDecimal(doc.size / 1024.0, 1, 2) + ' KB'}"></td>
+                    <td th:text="${doc.category}"></td>
+                    <td th:text="${#temporals.format(doc.uploadDate, 'dd.MM.yyyy HH:mm')}"></td>
+                    <td>
+                        <a th:href="@{/web/documents/{id}/download(id=${doc.id})}" class="btn btn-sm btn-success" title="Скачать">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <form th:action="@{/web/documents/{id}/delete(id=${doc.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить этот файл?')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- БЛОК: Пагинация -->
+        <div class="card-footer bg-white" th:if="${documentPage.totalPages > 1}">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    <!-- Кнопка "Назад" -->
+                    <li class="page-item" th:classappend="${documentPage.first} ? 'disabled'">
+                        <a class="page-link" th:href="@{/web/documents(page=${documentPage.number - 1}, query=${query}, category=${category})}">
+                            <span>&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Номера страниц -->
+                    <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, documentPage.totalPages - 1)}"
+                        th:classappend="${pageNumber == documentPage.number} ? 'active'">
+                        <a class="page-link" th:href="@{/web/documents(page=${pageNumber}, query=${query}, category=${category})}"
+                           th:text="${pageNumber + 1}"></a>
+                    </li>
+
+                    <!-- Кнопка "Вперед" -->
+                    <li class="page-item" th:classappend="${documentPage.last} ? 'disabled'">
+                        <a class="page-link" th:href="@{/web/documents(page=${documentPage.number + 1}, query=${query}, category=${category})}">
+                            <span>&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
