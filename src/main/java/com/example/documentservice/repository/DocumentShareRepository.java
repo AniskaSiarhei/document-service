@@ -16,4 +16,6 @@ public interface DocumentShareRepository extends JpaRepository<DocumentShare, Lo
      * @return true, если запись существует, иначе false
      */
     boolean existsByDocumentAndRecipient(Document document, User recipient);
+
+    boolean existsByDocumentIdAndRecipientId(Long documentId, Long recipientId);
 }

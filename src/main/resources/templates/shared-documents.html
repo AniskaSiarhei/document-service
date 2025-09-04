@@ -67,6 +67,12 @@
                         <a th:href="@{/web/documents/{id}/download(id=${doc.id})}" class="btn btn-sm btn-success" title="Скачать">
                             <i class="bi bi-download"></i>
                         </a>
+
+                        <form th:action="@{/web/shared-documents/{id}/save(id=${doc.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-primary" title="Сохранить к себе">
+                                <i class="bi bi-save-fill"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 </tbody>

@@ -181,4 +181,19 @@ public class WebController {
 
         return "shared-documents";
     }
+
+    @PostMapping("/web/shared-documents/{id}/save")
+    public String saveSharedDocument(@PathVariable Long id,
+                                     @AuthenticationPrincipal User currentUser,
+                                     RedirectAttributes redirectAttributes) {
+        try {
+            documentService.saveSharedDocument(id, currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Файл успешно сохранен в 'Мои документы'!");
+            // Перенаправляем пользователя в его список, чтобы он сразу увидел результат
+            return "redirect:/web/documents";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Не удалось сохранить файл: " + e.getMessage());
+            return "redirect:/web/shared-documents";
+        }
+    }
 }

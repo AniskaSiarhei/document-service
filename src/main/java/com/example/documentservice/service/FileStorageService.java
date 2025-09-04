@@ -25,4 +25,12 @@ public interface FileStorageService {
      * @param storageFileName Уникальное имя файла в хранилище.
      */
     void deleteFile(String storageFileName);
+
+    /**
+     * Копирует файл внутри хранилища.
+     * @param sourceObjectName Имя исходного файла
+     * @return Имя нового, скопированного файла
+     * @throws Exception если произошла ошибка при копировании
+     */
+    String copyFile(String sourceObjectName) throws Exception;
 }

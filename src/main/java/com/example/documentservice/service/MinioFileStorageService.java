@@ -1,5 +1,7 @@
 package com.example.documentservice.service;
 
+import io.minio.CopyObjectArgs;
+import io.minio.CopySource;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -70,5 +73,25 @@ public class MinioFileStorageService implements FileStorageService {
             log.error("Error deleting file from MinIO", e);
             throw new RuntimeException("Error deleting file from MinIO", e);
         }
+    }
+
+    @Override
+    public String copyFile(String sourceObjectName) throws Exception {
+        String newObjectName = UUID.randomUUID() + "-" + sourceObjectName.substring(sourceObjectName.indexOf("-") + 1);
+
+        minioClient.copyObject(
+                CopyObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(newObjectName)
+                        .source(
+                                CopySource.builder()
+                                        .bucket(bucketName)
+                                        .object(sourceObjectName)
+                                        .build()
+                        )
+                        .build()
+        );
+        log.info("Successfully copied file '{}' to '{}'", sourceObjectName, newObjectName);
+        return newObjectName;
     }
 }

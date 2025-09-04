@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -105,6 +106,47 @@ public class DocumentServiceImpl implements DocumentService {
 
         Page<Document> documents = documentRepository.findDocumentsSharedWithUser(currentUser.getId(), pageable);
         return documents.map(this::mapToDto);
+    }
+
+    @Override
+    @Transactional
+    public DocumentDto saveSharedDocument(Long sourceDocumentId, User currentUser) throws Exception {
+        // 1. Проверяем, что исходный документ существует
+        Document sourceDocument = documentRepository.findById(sourceDocumentId)
+                .orElseThrow(() -> new EntityNotFoundException("Source document not found with id: " + sourceDocumentId));
+
+        // 2. Проверка безопасности: убеждаемся, что документ действительно расшарен этому пользователю
+        if (!documentShareRepository.existsByDocumentIdAndRecipientId(sourceDocumentId, currentUser.getId())) {
+            // Дополнительная проверка: может пользователь пытается сохранить свой же документ из чужого списка?
+            if (!sourceDocument.getOwner().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You do not have permission to access this document.");
+            }
+        }
+
+        // 3. Проверка логики: нельзя сохранить свой же документ
+        if (sourceDocument.getOwner().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("You cannot save a document you already own.");
+        }
+
+        // 4. Копируем файл в MinIO
+        String newStorageFileName = fileStorageService.copyFile(sourceDocument.getStorageFileName());
+
+        // 5. Создаем новую запись в БД
+        Document newDocument = Document.builder()
+                .fileName(sourceDocument.getFileName())
+                .fileType(sourceDocument.getFileType())
+                .size(sourceDocument.getSize())
+                .category(sourceDocument.getCategory())
+                .tags(sourceDocument.getTags() != null ? new java.util.HashSet<>(sourceDocument.getTags()) : new java.util.HashSet<>())
+                .storageFileName(newStorageFileName)
+                .owner(currentUser) // <-- Новый владелец!
+                .build();
+
+        Document savedDocument = documentRepository.save(newDocument);
+        log.info("User '{}' saved a copy of document '{}' (Source ID: {}, New ID: {})",
+                currentUser.getUsername(), savedDocument.getFileName(), sourceDocumentId, savedDocument.getId());
+
+        return mapToDto(savedDocument);
     }
 
     @Override

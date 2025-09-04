@@ -36,4 +36,12 @@ public interface DocumentService {
      * @return Страница с DTO документов
      */
     Page<DocumentDto> getSharedWithMe(User currentUser, Pageable pageable);
+
+    /**
+     * Сохраняет копию расшаренного документа для текущего пользователя.
+     * @param sourceDocumentId ID исходного документа
+     * @param currentUser      Пользователь, который сохраняет копию
+     * @return DTO нового, сохраненного документа
+     */
+    DocumentDto saveSharedDocument(Long sourceDocumentId, User currentUser) throws Exception;
 }
