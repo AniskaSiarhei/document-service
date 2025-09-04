@@ -151,4 +151,34 @@ public class WebController {
 
         return "admin-dashboard";
     }
+
+    // ЭНДПОИНТ для обработки формы "Поделиться"
+    @PostMapping("/web/documents/{id}/share")
+    public String shareDocument(@PathVariable Long id,
+                                @RequestParam String recipientUsername,
+                                @AuthenticationPrincipal User sender,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            documentService.shareDocument(id, recipientUsername, sender);
+            redirectAttributes.addFlashAttribute("successMessage", "Документ успешно предоставлен пользователю " + recipientUsername);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка расшаривания: " + e.getMessage());
+        }
+        return "redirect:/web/documents";
+    }
+
+    // ЭНДПОИНТ для страницы "Доступные мне"
+    @GetMapping("/web/shared-documents")
+    public String sharedDocumentsPage(Model model,
+                                      @AuthenticationPrincipal User user,
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<DocumentDto> documentPage = documentService.getSharedWithMe(user, pageable);
+
+        model.addAttribute("documentPage", documentPage);
+        model.addAttribute("username", user.getUsername());
+
+        return "shared-documents";
+    }
 }

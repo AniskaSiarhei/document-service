@@ -1,7 +1,9 @@
 package com.example.documentservice.service;
 
 import com.example.documentservice.dto.FileDownloadDto;
+import com.example.documentservice.entity.DocumentShare;
 import com.example.documentservice.entity.Role;
+import com.example.documentservice.repository.DocumentShareRepository;
 import com.example.documentservice.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -38,6 +40,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
+    private final DocumentShareRepository documentShareRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,6 +62,49 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documentRepository.findAll(spec, pageable).map(this::mapToDto);
+    }
+
+    @Override
+    public void shareDocument(Long documentId, String recipientUsername, User sender) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new EntityNotFoundException("Document not found with id: " + documentId));
+
+        // Проверка прав: только владелец может расшарить документ
+        if (!document.getOwner().getId().equals(sender.getId())) {
+            throw new AccessDeniedException("Only the owner of the document can share it. You do not have permission to share this document");
+        }
+
+        // Проверка наличия пользователя в базе данных
+        User recipient = userRepository.findByUsername(recipientUsername)
+                .orElseThrow(() -> new EntityNotFoundException("Recipient user not found with username: " + recipientUsername));
+
+        // Проверка на расшаривание самому себе
+        if (sender.getId().equals(recipient.getId())) {
+            throw new IllegalArgumentException("You cannot share a document with yourself");
+        }
+
+        // Проверка, не был ли документ уже расшарен этому пользователю
+        if (documentShareRepository.existsByDocumentAndRecipient(document, recipient)) {
+            throw new IllegalArgumentException("Document is already shared with user: " + recipientUsername);
+        }
+
+        // Создание и сохранение записи о праве доступа
+        DocumentShare documentShare = DocumentShare.builder()
+                .document(document)
+                .recipient(recipient)
+                .build();
+
+        documentShareRepository.save(documentShare);
+
+        log.info("User '{}' shared document '{}' (ID: {}) with user '{}'",
+                sender.getUsername(), document.getFileName(), document.getId(), recipientUsername);
+    }
+
+    @Override
+    public Page<DocumentDto> getSharedWithMe(User currentUser, Pageable pageable) {
+
+        Page<Document> documents = documentRepository.findDocumentsSharedWithUser(currentUser.getId(), pageable);
+        return documents.map(this::mapToDto);
     }
 
     @Override

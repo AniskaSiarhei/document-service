@@ -21,11 +21,19 @@ public interface DocumentService {
 
     Page<DocumentDto> getAllDocumentsForAdmin(Pageable pageable, String category, Set<String> tags, String query, String username);
 
+    /**
+     * Расшаривает документ другому пользователю.
+     * @param documentId ID документа для расшаривания
+     * @param recipientUsername Имя пользователя-получателя
+     * @param sender Пользователь, который инициирует действие
+     */
+    void shareDocument(Long documentId, String recipientUsername, User sender);
 
-
-
-
-
-
-
+    /**
+     * Получает страницу документов, которые были расшарены текущему пользователю.
+     * @param currentUser Текущий аутентифицированный пользователь
+     * @param pageable    Информация о пагинации
+     * @return Страница с DTO документов
+     */
+    Page<DocumentDto> getSharedWithMe(User currentUser, Pageable pageable);
 }
