@@ -24,7 +24,7 @@ public interface FileStorageService {
      * Удаляет файл из хранилища.
      * @param storageFileName Уникальное имя файла в хранилище.
      */
-    void deleteFile(String storageFileName);
+    void deleteFile(String storageFileName) throws Exception;
 
     /**
      * Копирует файл внутри хранилища.

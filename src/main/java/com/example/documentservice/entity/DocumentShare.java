@@ -12,17 +12,20 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "document_shares", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"document_id", "recipient_id"})
 })
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -43,4 +46,27 @@ public class DocumentShare {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime shareAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DocumentShare that = (DocumentShare) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    public void setDocument(Document document) {
+        if (this.document != null) {
+            this.document.getShares().remove(this);
+        }
+        this.document = document;
+        if (document != null && !document.getShares().contains(this)) {
+            document.getShares().add(this);
+        }
+    }
 }

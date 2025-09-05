@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import io.minio.errors.ErrorResponseException;
 
 import java.io.InputStream;
 import java.util.UUID;
@@ -60,8 +61,7 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     @Override
-    public void deleteFile(String storageFileName) {
-
+    public void deleteFile(String storageFileName) throws Exception {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
@@ -69,9 +69,23 @@ public class MinioFileStorageService implements FileStorageService {
                             .object(storageFileName)
                             .build()
             );
+            log.info("Successfully deleted file '{}' from MinIO.", storageFileName);
+        } catch (ErrorResponseException e) {
+            // "Прощаем" ошибку, если она связана с тем, что файл не найден.
+            // "NoSuchKey" - это стандартный код ошибки для S3-совместимых хранилищ.
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                log.warn("Attempted to delete file '{}', but it was not found in MinIO. " +
+                         "Proceeding to delete the database record.", storageFileName);
+                // Ничего не делаем, просто игнорируем эту ошибку
+            } else {
+                // Если ошибка другая (например, нет доступа), то ее нужно пробросить дальше
+                log.error("An unexpected error occurred while deleting file '{}' from MinIO.", storageFileName, e);
+                throw e;
+            }
         } catch (Exception e) {
-            log.error("Error deleting file from MinIO", e);
-            throw new RuntimeException("Error deleting file from MinIO", e);
+            // Ловим другие возможные исключения (сетевые и т.д.)
+            log.error("An unexpected error occurred while deleting file '{}' from MinIO.", storageFileName, e);
+            throw e;
         }
     }
 

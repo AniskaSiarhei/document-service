@@ -6,6 +6,7 @@ import com.example.documentservice.dto.SignUpRequest;
 import com.example.documentservice.entity.User;
 import com.example.documentservice.service.AuthenticationService;
 import com.example.documentservice.service.DocumentService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Set;
 
+@Slf4j
 @Controller
 @RequestMapping("/")
 @RequiredArgsConstructor
@@ -108,7 +110,7 @@ public class WebController {
 
     @GetMapping("/web/documents/{id}/download")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        // ИСПОЛЬЗУЕМ НОВЫЙ DTO
+
         FileDownloadDto fileDto = documentService.downloadDocument(id, user);
 
         return ResponseEntity.ok()
@@ -125,7 +127,10 @@ public class WebController {
             documentService.deleteDocument(id, user);
             redirectAttributes.addFlashAttribute("successMessage", "Документ успешно удален.");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка удаления: " + e.getMessage());
+            String errorMessage = "Ошибка удаления: " +
+                                  (e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка удаления: " +errorMessage);
+            log.error("Error deleting document {}", id, e);
         }
         return "redirect:/web/documents";
     }

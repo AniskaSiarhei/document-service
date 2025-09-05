@@ -15,15 +15,20 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,7 +46,7 @@ public class Document {
     @Column(nullable = false)
     private String storageFileName;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String fileType;
 
     @Column(nullable = false)
@@ -56,13 +61,28 @@ public class Document {
     @ElementCollection(fetch = FetchType.EAGER)  // EAGER - загружать теги вместе с документом
     @CollectionTable(name = "document_tags", joinColumns = @JoinColumn(name = "document_id")) // Таблица для хранения тегов
     @Column(name = "tag")
-    private Set<String> tags;
+    private Set<String> tags = new HashSet<>();
 
     // Связь "Многие к одному": много документов могут принадлежать одному пользователю
     @ManyToOne(fetch = FetchType.LAZY) // LAZY - загружать пользователя только при прямом обращении
     @JoinColumn(name = "user_id", nullable = false) // Внешний ключ на таблицу users
     private User owner;
 
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<DocumentShare> shares = new HashSet<>();
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Document document = (Document) o;
+        return Objects.equals(id, document.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

@@ -1,34 +1,31 @@
 package com.example.documentservice.service;
 
+import com.example.documentservice.dto.DocumentDto;
 import com.example.documentservice.dto.FileDownloadDto;
+import com.example.documentservice.entity.Document;
 import com.example.documentservice.entity.DocumentShare;
 import com.example.documentservice.entity.Role;
-import com.example.documentservice.repository.DocumentShareRepository;
-import com.example.documentservice.repository.UserRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-
-import com.example.documentservice.dto.DocumentDto;
-import com.example.documentservice.entity.Document;
 import com.example.documentservice.entity.User;
 import com.example.documentservice.repository.DocumentRepository;
+import com.example.documentservice.repository.DocumentShareRepository;
+import com.example.documentservice.repository.UserRepository;
 import com.example.documentservice.repository.specification.DocumentSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.InputStream;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -220,25 +217,37 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public void deleteDocument(Long id, User user) {
+    public void deleteDocument(Long id, User currentUser) throws Exception {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Document not found with id: " + id));
 
-        // Проверяем права доступа
-
-        boolean isAdmin = user.getRole().equals(Role.ROLE_ADMIN);
-        boolean isOwner = document.getOwner().getId().equals(user.getId());
+        // Проверка прав: пользователь должен быть владельцем ИЛИ админом
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = document.getOwner().getId().equals(currentUser.getId());
 
         if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException("You do not have permission to delete this document");
+            throw new AccessDeniedException("You do not have permission to delete this document.");
         }
 
-        // 1. Удаляем файл из MinIO
-        fileStorageService.deleteFile(document.getStorageFileName());
+        try {
+            // 1. Удаляем все связи вручную
+            documentShareRepository.deleteAllByDocumentId(id);
 
-        // 2. Удаляем метаданные из PostgreSQL
-        documentRepository.delete(document);
-        log.info("User '{}' deleted document '{}' (ID: {})", user.getUsername(), document.getFileName(), id);
+            // 2. Пытаемся удалить файл из хранилища.
+            fileStorageService.deleteFile(document.getStorageFileName());
+
+            // 3. Гарантированно удаляем запись из базы данных.
+            documentRepository.delete(document);
+
+            log.info("User '{}' successfully deleted document '{}' (ID: {}) and its database record.",
+                    currentUser.getUsername(), document.getFileName(), id);
+
+        } catch (Exception e) {
+            log.error("Error deleting document with ID: {}", id, e);
+            throw new RuntimeException("Error deleting document: " + e.getMessage(), e);
+        }
+
     }
 
     private DocumentDto mapToDto(Document document) {

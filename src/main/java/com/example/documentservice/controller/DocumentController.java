@@ -65,7 +65,7 @@ public class DocumentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id,
-                                               @AuthenticationPrincipal User user) {
+                                               @AuthenticationPrincipal User user) throws Exception {
         documentService.deleteDocument(id, user);
         return ResponseEntity.noContent().build();
     }

@@ -15,7 +15,7 @@ public interface DocumentService {
 
     FileDownloadDto downloadDocument(Long id, User user);
 
-    void deleteDocument(Long id, User user);
+    void deleteDocument(Long id, User user) throws Exception;
 
     Page<DocumentDto> getAllUserDocuments(User owner, String category, Set<String> tags, String query, Pageable pageable);
 
