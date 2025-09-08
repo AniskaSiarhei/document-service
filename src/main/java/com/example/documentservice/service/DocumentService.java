@@ -1,5 +1,6 @@
 package com.example.documentservice.service;
 
+import com.example.documentservice.dto.DocumentShareDto;
 import com.example.documentservice.dto.FileDownloadDto;
 import com.example.documentservice.dto.DocumentDto;
 import com.example.documentservice.entity.User;
@@ -46,4 +47,10 @@ public interface DocumentService {
     DocumentDto saveSharedDocument(Long sourceDocumentId, User currentUser) throws Exception;
 
     void unshareDocument(Long documentId, User currentUser);
+
+    // Получить список документов, отправленных текущим пользователем.
+    Page<DocumentShareDto> getSentByMe(User currentUser, Pageable pageable);
+
+    //Отозвать право доступа к документу.
+    void revokeShare(Long shareId, User currentUser);
 }

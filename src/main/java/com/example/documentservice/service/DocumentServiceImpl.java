@@ -1,6 +1,7 @@
 package com.example.documentservice.service;
 
 import com.example.documentservice.dto.DocumentDto;
+import com.example.documentservice.dto.DocumentShareDto;
 import com.example.documentservice.dto.FileDownloadDto;
 import com.example.documentservice.entity.Document;
 import com.example.documentservice.entity.DocumentShare;
@@ -162,6 +163,30 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<DocumentShareDto> getSentByMe(User currentUser, Pageable pageable) {
+        log.info("Fetching documents sent by user '{}'", currentUser.getUsername());
+        Page<DocumentShare> shares = documentShareRepository.findByDocumentOwner(currentUser, pageable);
+        return shares.map(this::mapToShareDto);
+    }
+
+    @Override
+    @Transactional
+    public void revokeShare(Long shareId, User currentUser) {
+        log.info("User '{}' attempting to revoke share with ID: {}", currentUser.getUsername(), shareId);
+        DocumentShare share = documentShareRepository.findById(shareId)
+                .orElseThrow(() -> new EntityNotFoundException("Share not found with id: " + shareId));
+
+        // Проверка прав: только владелец документа может отозвать доступ
+        if (!share.getDocument().getOwner().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You do not have permission to revoke this share.");
+        }
+
+        documentShareRepository.delete(share);
+        log.info("Share with ID {} revoked successfully.", shareId);
+    }
+
+    @Override
     public DocumentDto uploadDocument(MultipartFile file, String category, Set<String> tags, User owner) {
         // Проверяем, существует ли пользователь (на всякий случай)
         User managedOwner = userRepository.findById(owner.getId())
@@ -276,5 +301,15 @@ public class DocumentServiceImpl implements DocumentService {
                 .tags(document.getTags())
                 .ownerUsername(document.getOwner().getUsername())
                 .build();
+    }
+
+
+    private DocumentShareDto mapToShareDto(DocumentShare share) {
+        return new DocumentShareDto(
+                share.getId(),
+                mapToDto(share.getDocument()),
+                share.getRecipient().getUsername(),
+                share.getShareAt()
+        );
     }
 }

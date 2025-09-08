@@ -3,6 +3,8 @@ package com.example.documentservice.repository;
 import com.example.documentservice.entity.Document;
 import com.example.documentservice.entity.DocumentShare;
 import com.example.documentservice.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -29,4 +31,12 @@ public interface DocumentShareRepository extends JpaRepository<DocumentShare, Lo
     void deleteAllByDocumentId(@Param("documentId") Long documentId);
 
     Optional<DocumentShare> findByDocumentIdAndRecipientId(Long documentId, Long recipientId);
+
+    /**
+     * НОВЫЙ МЕТОД: Находит все права доступа, выданные определенным пользователем (владельцем документа).
+     * @param owner Владелец документов.
+     * @param pageable Параметры пагинации.
+     * @return Страница с правами доступа.
+     */
+    Page<DocumentShare> findByDocumentOwner(User owner, Pageable pageable);
 }

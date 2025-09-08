@@ -1,6 +1,7 @@
 package com.example.documentservice.controller;
 
 import com.example.documentservice.dto.DocumentDto;
+import com.example.documentservice.dto.DocumentShareDto;
 import com.example.documentservice.dto.FileDownloadDto;
 import com.example.documentservice.dto.SignUpRequest;
 import com.example.documentservice.entity.User;
@@ -221,4 +222,29 @@ public class WebController {
 
         return "redirect:/web/shared-documents";
     }
+
+    @GetMapping("/web/sent-documents")
+    public String sentDocumentsPage(Model model,
+                                    @AuthenticationPrincipal User user,
+                                    @RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<DocumentShareDto> sharePage = documentService.getSentByMe(user, pageable);
+        model.addAttribute("sharePage", sharePage);
+        return "sent-documents";
+    }
+
+    @PostMapping("/web/sent-documents/{shareId}/revoke")
+    public String revokeShare(@PathVariable Long shareId,
+                              @AuthenticationPrincipal User user,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            documentService.revokeShare(shareId, user);
+            redirectAttributes.addFlashAttribute("successMessage", "Доступ к документу успешно отозван.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка: " + e.getMessage());
+        }
+        return "redirect:/web/sent-documents";
+    }
+
 }
