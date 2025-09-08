@@ -44,4 +44,6 @@ public interface DocumentService {
      * @return DTO нового, сохраненного документа
      */
     DocumentDto saveSharedDocument(Long sourceDocumentId, User currentUser) throws Exception;
+
+    void unshareDocument(Long documentId, User currentUser);
 }

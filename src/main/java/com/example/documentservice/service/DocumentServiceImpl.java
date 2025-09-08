@@ -147,6 +147,21 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public void unshareDocument(Long documentId, User currentUser) {
+
+        DocumentShare share = documentShareRepository.findByDocumentIdAndRecipientId(documentId, currentUser.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Access to the document was not found with id: " + documentId));
+
+        if (!share.getRecipient().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You do not have permission to access this document.");
+        }
+
+        documentShareRepository.delete(share);
+
+        log.info("User '{}' removed access to document ID: {}", currentUser.getUsername(), documentId);
+    }
+
+    @Override
     public DocumentDto uploadDocument(MultipartFile file, String category, Set<String> tags, User owner) {
         // Проверяем, существует ли пользователь (на всякий случай)
         User managedOwner = userRepository.findById(owner.getId())

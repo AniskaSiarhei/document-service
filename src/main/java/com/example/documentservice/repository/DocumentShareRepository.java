@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface DocumentShareRepository extends JpaRepository<DocumentShare, Long> {
 
@@ -25,4 +27,6 @@ public interface DocumentShareRepository extends JpaRepository<DocumentShare, Lo
     @Modifying
     @Query("DELETE FROM DocumentShare ds WHERE ds.document.id = :documentId")
     void deleteAllByDocumentId(@Param("documentId") Long documentId);
+
+    Optional<DocumentShare> findByDocumentIdAndRecipientId(Long documentId, Long recipientId);
 }

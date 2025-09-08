@@ -73,6 +73,15 @@
                                 <i class="bi bi-save-fill"></i>
                             </button>
                         </form>
+
+                        <form th:action="@{/web/shared-documents/{id}/unshare(id=${doc.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    title="Удалить доступ"
+                                    onclick="return confirm('Вы уверены, что хотите удалить доступ к этому документу?')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
                     </td>
                 </tr>
                 </tbody>
