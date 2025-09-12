@@ -25,20 +25,31 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfiguration {
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserService userService;
+
+    private static final String[] SWAGGER_WHITELIST = {
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/swagger-resources",
+            "/swagger-ui.html"
+    };
+
+    private static final String[] WEB_WHITELIST = {
+            "/", "/login", "/register", "/css/**", "/js/**", "/favicon.ico"
+    };
 
     // --- ЦЕПОЧКА ФИЛЬТРОВ ДЛЯ API (JWT) ---
     @Bean
     @Order(1) // Приоритет 1: сначала проверяем запросы к API
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/**") // Применяем фильтры только к путям /api/**
+                .securityMatcher("/api/**") // ТОЛЬКО API endpoints
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        // Разрешаем доступ к эндпоинтам аутентификации и Swagger
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Все остальные запросы требуют аутентификации
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -51,17 +62,21 @@ public class SecurityConfiguration {
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        // Разрешаем доступ к странице регистрации /register
-                        .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/favicon.ico").permitAll()
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        .requestMatchers(WEB_WHITELIST).permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
+                        .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/web/documents", true)
+                        .failureUrl("/login?error")
                         .permitAll())
                 .logout(logout -> logout
                         //  Spring по умолчанию использует POST /logout
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutUrl("/logout")   // добавил
+                        .logoutSuccessUrl("/login?logout") // добавил web/
                         .permitAll());
         return http.build();
     }
