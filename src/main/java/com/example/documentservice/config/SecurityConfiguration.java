@@ -29,6 +29,7 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserService userService;
 
+    // Белый список для Swagger UI
     private static final String[] SWAGGER_WHITELIST = {
             "/swagger-ui/**",
             "/v3/api-docs/**",
@@ -37,8 +38,14 @@ public class SecurityConfiguration {
             "/swagger-ui.html"
     };
 
+    // Белый список для публичных веб-страниц
     private static final String[] WEB_WHITELIST = {
             "/", "/login", "/register", "/css/**", "/js/**", "/favicon.ico"
+    };
+
+    // Белый список для эндпоинтов мониторинга
+    private static final String[] ACTUATOR_WHITELIST = {
+            "/actuator/**"
     };
 
     // --- ЦЕПОЧКА ФИЛЬТРОВ ДЛЯ API (JWT) ---
@@ -66,6 +73,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers(WEB_WHITELIST).permitAll()
+                        .requestMatchers(ACTUATOR_WHITELIST).permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")

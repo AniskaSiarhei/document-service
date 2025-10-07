@@ -1,6 +1,24 @@
 version: '3.9'
 
 services:
+  # Сервис приложения
+  app:
+    container_name: dss-app
+    # Собираем образ из Dockerfile в текущей директории
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - minio
+    # Подключаем переменные окружения из файла .env
+    env_file:
+      - .env
+    networks:
+      - dss-network
+
   #  Сервис базы данных POSTGRES
   postgres:
     image: postgres
@@ -31,27 +49,38 @@ services:
     networks:
       - dss-network
 
-  app:
-    container_name: dss-app
-    # Собираем образ из Dockerfile в текущей директории
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-    - "8080:8080"
-    depends_on:
-      - postgres
-      - minio
-    # Подключаем переменные окружения из файла .env
-    env_file:
-      - .env
-    networks:
-        - dss-network
+      # Сервисы для мониторинга
+  prometheus:
+        image: prom/prometheus:latest
+        container_name: prometheus
+        ports:
+          - "9090:9090"
+        volumes:
+          - ./prometheus:/etc/prometheus
+          - prometheus_data:/prometheus
+        command:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+        networks:
+          - dss-network
+
+  grafana:
+        image: grafana/grafana-oss:latest
+        container_name: grafana
+        ports:
+          - "3000:3000"
+        volumes:
+          - grafana_data:/var/lib/grafana
+          - ./grafana/provisioning:/etc/grafana/provisioning
+        networks:
+          - dss-network
+
 
 # Определяем тома для хранения данных
 volumes:
   postgres_data:
   minio_data:
+  prometheus_data:
+  grafana_data:
 
 # Определяем общую сеть для взаимодействия контейнеров
 networks:
