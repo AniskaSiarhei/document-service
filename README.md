@@ -1,3 +1,5 @@
+<img width="1910" height="834" alt="screenshot" src="https://github.com/user-attachments/assets/558cf9e3-11e0-4ec2-a858-8480364e2e94" />
+
 ## 🚀 Document Storage Service
 This project is a full-featured web service for uploading, storing, sharing, and managing documents. It has been developed using a modern Java technology stack and is fully containerized with Docker for easy deployment and scalability.
 
@@ -104,9 +106,7 @@ docker-compose up --build
 This command will:
 
 - Build your Spring Boot application into a JAR file using Maven.
-
 - Create a Docker image for your application.
-
 - Start all 5 containers: the application, PostgreSQL, MinIO, Prometheus, and Grafana.
 
 The application will be available a few moments after startup.
@@ -118,46 +118,36 @@ Once the application is running, the following endpoints are available:
   - **Main Application (Web UI):**
 
     - URL: ```http://localhost:8080```
-
     - You will be redirected to the login page on your first visit.
 
   - **MinIO Management Console:**
 
     - **URL:** ```http://localhost:9001```
-
     - **Login:** ```minio```
-
     - **Password:** ```minio123``` (or as specified in your ```.env``` file)
 
   - **REST API Documentation (Swagger UI):**
 
     - **URL:** ```http://localhost:8080/swagger-ui.html```
-
     - To test protected endpoints, obtain a JWT token via ```/api/auth/login``` and use the "Authorize" button to apply it.
 
   - **Prometheus:**
 
     - **URL:** ```http://localhost:9090```
-
     - Here you can check target status (```Status -> Targets```) and run direct queries against your metrics.
 
   - **Grafana (Monitoring Dashboard):**
 
     - **URL:** ```http://localhost:3000```
-
     - **Login:** ```admin```
-
     - **Password:** ```admin``` (you will be prompted to change it on first login)
-
     - The "Spring Boot APM Dashboard" will be pre-installed automatically.
 
 ## Default Credentials:
 An administrator user is created automatically on the first run:
 
   - **Username:** ```admin```
-
   - **Password:** ```admin```
-
   - **Email:** ```admin@example.com```
 
 You can register new users through the web interface.
